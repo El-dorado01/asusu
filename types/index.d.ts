@@ -33,6 +33,8 @@ export interface SocietyProps {
     frequency: 'monthly' | 'quarterly' | 'yearly';
     payout_cycle: 'rotating' | 'fixed';
     late_fee: number;
+    tbill_allocation_percentage?: number;
+    tbill_duration_days?: number;
     rotation_queue?: [number];
   };
 
@@ -151,4 +153,42 @@ export interface FinancialPassport {
   completed_cycles: number;
   verified_cooperatives_count: number;
   milestones: PassportMilestone[];
+}
+
+export interface InvestmentCycleMilestone {
+  stage: number;
+  title: string;
+  description: string;
+  date: string;
+  completed: boolean;
+}
+
+export interface InvestmentCycle {
+  id: string;
+  society_id: string | number;
+  society_name: string;
+  total_pool_assets: number;
+  allocation_percentage: number;
+  principal_amount: number;
+  instrument_name: string;
+  tenor_days: number;
+  annual_yield_rate: number;
+  expected_returns: number;
+  status: 'allocated' | 'purchased' | 'active' | 'matured' | 'distributed';
+  started_at: string;
+  maturity_date: string;
+  milestones: InvestmentCycleMilestone[];
+}
+
+export interface FinancialOpportunity {
+  id: string;
+  title: string;
+  description: string;
+  category: 'investment' | 'credit' | 'insurance' | 'sme' | 'pension';
+  status: 'active' | 'unlocked' | 'locked';
+  required_level: string;
+  benefit_summary: string;
+  partner_name?: string;
+  interest_rate_or_yield?: string;
+  max_limit?: string;
 }

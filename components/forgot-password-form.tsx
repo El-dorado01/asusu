@@ -76,9 +76,9 @@ export function ForgotPasswordForm({
               <div className='flex size-8 items-center justify-center rounded-md'>
                 <IconUsersGroup className='size-6' />
               </div>
-              <span className='sr-only'>Asusu HQ</span>
+              <span className='sr-only'>CoopShot</span>
             </Link>
-            <h1 className='text-xl font-bold'>Input your email to Asusu HQ.</h1>
+            <h1 className='text-xl font-bold'>Input your email to CoopShot.</h1>
             <FieldDescription>
               Forgot your password? Don&apos;t fret!
             </FieldDescription>

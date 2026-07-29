@@ -6,10 +6,11 @@ import {
   IconCalendar,
   IconFlag,
   IconShare2,
-  IconShieldCheck,
+  IconIdBadge2,
   IconEye,
 } from '@tabler/icons-react';
 import { SocietyProps } from '@/types';
+import { MakeContributionModal } from './make-contribution-modal';
 
 const RightAside: React.FC<{ society: SocietyProps }> = ({ society }) => {
   return (
@@ -28,13 +29,7 @@ const RightAside: React.FC<{ society: SocietyProps }> = ({ society }) => {
                   Join Society
                 </Button>
               ) : (
-                <Button
-                  className='w-full'
-                  size='lg'
-                  disabled
-                >
-                  Already a Member
-                </Button>
+                <MakeContributionModal society={society} />
               )}
 
               {!society.is_public && society.can_join !== false && (
@@ -90,7 +85,7 @@ const RightAside: React.FC<{ society: SocietyProps }> = ({ society }) => {
                 <span>{society.is_public ? 'Public' : 'Private'} society</span>
               </div>
               <div className='flex items-center gap-2'>
-                <IconShieldCheck className='h-4 w-4 text-muted-foreground' />
+                <IconIdBadge2 className='h-4 w-4 text-muted-foreground' />
                 <span>
                   {society.verified ? 'Verified' : 'Pending verification'}
                 </span>

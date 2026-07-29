@@ -2,7 +2,7 @@ import { getFinancialPassport } from '@/app/actions/passport';
 import { FinancialPassportCard } from '@/components/financial-passport-card';
 
 export const metadata = {
-  title: 'Financial Passport | Asusu',
+  title: 'Financial Passport | CoopShot',
   description: 'Your portable financial reputation and trust profile.',
 };
 

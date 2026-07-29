@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -32,7 +33,7 @@ import {
   PenaltiesResponse,
   SocietyProps,
 } from '@/types';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { MakeContributionModal } from '@/components/make-contribution-modal';
 
 export default async function SocietyLedgerPage({
   params,
@@ -215,8 +216,23 @@ export default async function SocietyLedgerPage({
 
             {/* Transaction History - Horizontal Scroll Inside Card */}
             <Card>
-              <CardHeader>
-                <CardTitle>Transaction History</CardTitle>
+              <CardHeader className='flex flex-row items-center justify-between space-y-0'>
+                <div>
+                  <CardTitle>Transaction History</CardTitle>
+                  <p className='text-xs text-muted-foreground mt-1'>
+                    Contributions & payouts record
+                  </p>
+                </div>
+                <div className='w-auto'>
+                  <MakeContributionModal
+                    society={society}
+                    trigger={
+                      <Button size='sm' className='cursor-pointer font-medium'>
+                        Make Contribution
+                      </Button>
+                    }
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 {ledger.length === 0 ? (
@@ -270,7 +286,7 @@ export default async function SocietyLedgerPage({
                                 {entry.type.replace('_', ' ')}
                               </Badge>
                             </TableCell>
-                            <TableCell className='text-sm text-muted-foreground max-w-[200px] truncate'>
+                            <TableCell className='text-sm text-muted-foreground max-w-50 truncate'>
                               {entry.description || '—'}
                             </TableCell>
                             <TableCell className='text-right font-medium '>
@@ -347,7 +363,7 @@ export default async function SocietyLedgerPage({
                               <TableCell className='font-medium text-red-600 whitespace-nowrap'>
                                 ₦{penalty.amount.toLocaleString()}
                               </TableCell>
-                              <TableCell className='text-sm text-muted-foreground max-w-[200px] truncate'>
+                              <TableCell className='text-sm text-muted-foreground max-w-50 truncate'>
                                 {penalty.description || 'Late contribution'}
                               </TableCell>
                               <TableCell>

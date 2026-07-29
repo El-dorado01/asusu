@@ -134,7 +134,7 @@ export function ResetPasswordForm({
               <div className='flex size-8 items-center justify-center rounded-md'>
                 <IconUsersGroup className='size-6' />
               </div>
-              <span className='sr-only'>Asusu HQ</span>
+              <span className='sr-only'>CoopShot</span>
             </Link>
             <h1 className='text-xl font-bold'>Input OTP sent to your email.</h1>
             <FieldDescription>

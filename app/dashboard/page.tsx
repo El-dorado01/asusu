@@ -3,22 +3,28 @@ import { RecommendedSocietiesClient } from '@/components/recommended-societies-c
 import { PublicSocietiesClient } from '@/components/public-societies-client';
 import { getFinancialPassport } from '@/app/actions/passport';
 import { PassportWidget } from '@/components/passport-widget';
+import { PlatformWalletCard } from '@/components/platform-wallet-card';
+import { DashboardActivityWidget } from '@/components/dashboard-activity-widget';
 
 export default async function Dashboard() {
   const passport = await getFinancialPassport();
 
   return (
-    <div className='flex flex-1 flex-col px-6'>
-      <div className='@container/main grid flex-1 grid-cols-1 gap-6 py-6 md:gap-8 md:py-8 lg:grid-cols-5'>
+    <div className='flex flex-1 flex-col px-6 py-6 space-y-8'>
+      {/* Aggregated Platform Asset Wallet Header */}
+      <PlatformWalletCard passport={passport} />
+
+      {/* Main Dashboard Layout Grid */}
+      <div className='@container/main grid flex-1 grid-cols-1 gap-6 lg:grid-cols-5'>
         {/* Main Content - Left (3/5) */}
         <main className='lg:col-span-3 space-y-10'>
           <section>
-            <h2 className='mb-5 text-2xl font-bold'>Recommended for You</h2>
+            <h2 className='mb-5 text-2xl font-bold tracking-tight'>Recommended for You</h2>
             <RecommendedSocietiesClient />
           </section>
 
           <section>
-            <h2 className='mb-5 text-2xl font-bold'>
+            <h2 className='mb-5 text-2xl font-bold tracking-tight'>
               Explore Public Societies
             </h2>
             <PublicSocietiesClient />
@@ -31,28 +37,8 @@ export default async function Dashboard() {
             {/* Signature Financial Passport Widget */}
             <PassportWidget passport={passport} />
 
-            {/* Quick Stats */}
-            <div className='rounded-xl border bg-card p-6 shadow-sm'>
-              <h3 className='text-lg font-semibold mb-4'>Your Activity</h3>
-              <div className='space-y-4 text-sm'>
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground'>
-                    Active Societies
-                  </span>
-                  <span className='font-medium'>{passport.verified_cooperatives_count}</span>
-                </div>
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground'>Total Savings</span>
-                  <span className='font-medium text-emerald-600 dark:text-emerald-400'>
-                    ₦{passport.total_savings.toLocaleString()}
-                  </span>
-                </div>
-                <div className='flex justify-between'>
-                  <span className='text-muted-foreground'>Reputation Rank</span>
-                  <span className='font-medium text-primary'>{passport.trust_level.split('—')[0]}</span>
-                </div>
-              </div>
-            </div>
+            {/* Interactive Activity & Quick Actions Widget */}
+            <DashboardActivityWidget passport={passport} />
           </div>
         </aside>
       </div>

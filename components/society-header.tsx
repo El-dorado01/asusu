@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   IconCalendar,
   IconCurrencyDollar,
-  IconShieldCheck,
+  IconIdBadge2,
   IconUsers,
   IconCode,
   IconHistory,
@@ -19,7 +19,8 @@ import {
   IconRefresh,
   IconAlertCircle,
   IconChevronRight,
-  IconSettings, // ← New icon
+  IconSettings,
+  IconBuildingBank,
 } from '@tabler/icons-react';
 import { SocietyProps } from '@/types';
 
@@ -41,7 +42,7 @@ const SocietyHeader: React.FC<{ society: SocietyProps }> = ({ society }) => {
           <div className='flex items-start gap-6'>
             <Avatar className='h-24 w-24 border-4 border-background shadow-lg shrink-0'>
               <AvatarImage
-                src={society.avatar_url}
+                src={society.avatar_url || undefined}
                 alt={society.name}
               />
               <AvatarFallback className='text-5xl font-bold bg-primary text-primary-foreground'>
@@ -59,7 +60,7 @@ const SocietyHeader: React.FC<{ society: SocietyProps }> = ({ society }) => {
                     variant='default'
                     className='flex items-center gap-1'
                   >
-                    <IconShieldCheck className='h-3 w-3' />
+                    <IconIdBadge2 className='h-3 w-3' />
                     Verified
                   </Badge>
                 ) : (
@@ -163,7 +164,20 @@ const SocietyHeader: React.FC<{ society: SocietyProps }> = ({ society }) => {
                   <span>Rotation Queue</span>
                 </Link>
 
-                {/* New Settings Tab */}
+                {/* Community Wealth Tab */}
+                <Link
+                  href={`/dashboard/societies/${id}/wealth`}
+                  className={`flex items-center gap-2 h-full border-b-2 text-sm min-w-max transition-colors ${
+                    isActive(`/dashboard/societies/${id}/wealth`)
+                      ? 'border-primary text-primary font-medium'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <IconBuildingBank className='h-4 w-4 min-w-4' />
+                  <span>Community Wealth</span>
+                </Link>
+
+                {/* Settings Tab */}
                 <Link
                   href={`/dashboard/societies/${id}/settings`}
                   className={`flex items-center gap-2 h-full border-b-2 text-sm min-w-max transition-colors ${

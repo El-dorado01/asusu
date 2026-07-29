@@ -11,7 +11,7 @@ export default function LoginPage() {
           <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
             <IconUsersGroup className="size-4" />
           </div>
-          Asusu HQ
+          CoopShot
         </Link>
         <LoginForm />
       </div>

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import {
-  IconShieldCheck,
+  IconIdBadge2,
   IconUserPlus,
   IconLock,
   IconGlobe,
@@ -25,6 +25,7 @@ import {
   IconCircleCheck,
   IconImageInPicture,
   IconLoader,
+  IconTrendingUp,
 } from '@tabler/icons-react';
 import { toggleSocietyVisibility, updateSocietyAvatar } from '@/app/actions/societies';
 import { SocietyDocument, SocietyProps } from '@/types';
@@ -91,7 +92,7 @@ export default function SocietySettingsClient({
       <Card>
         <CardHeader>
           <CardTitle className='flex items-center gap-2'>
-            <IconShieldCheck className='h-5 w-5' />
+            <IconIdBadge2 className='h-5 w-5' />
             Verification Status
           </CardTitle>
           <CardDescription>
@@ -195,9 +196,12 @@ export default function SocietySettingsClient({
       <Card>
         <CardHeader className='flex flex-row items-start justify-between'>
           <div>
-            <CardTitle>Contribution Settings</CardTitle>
+            <CardTitle className='flex items-center gap-2'>
+              <IconTrendingUp className='h-5 w-5 text-primary' />
+              Contribution & Treasury Policy Settings
+            </CardTitle>
             <CardDescription>
-              These settings define how members contribute.
+              Define contribution parameters and Treasury Bill allocation rules for this society.
             </CardDescription>
           </div>
           {society.can_manage && (
@@ -205,38 +209,55 @@ export default function SocietySettingsClient({
               variant='outline'
               size='sm'
               onClick={() => setEditOpen(true)}
+              className='cursor-pointer'
             >
               <IconEdit className='mr-2 h-4 w-4' />
-              Edit
+              Edit Settings
             </Button>
           )}
         </CardHeader>
         <CardContent className='space-y-6'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
             <div>
               <p className='text-sm text-muted-foreground'>
                 Contribution Amount
               </p>
-              <p className='text-xl font-bold'>
+              <p className='text-xl font-bold text-foreground'>
                 ₦{society.settings.contribution_amount.toLocaleString()}
               </p>
             </div>
             <div>
               <p className='text-sm text-muted-foreground'>Frequency</p>
-              <p className='text-lg font-semibold capitalize'>
+              <p className='text-lg font-semibold capitalize text-foreground'>
                 {society.settings.frequency}
               </p>
             </div>
             <div>
               <p className='text-sm text-muted-foreground'>Payout Cycle</p>
-              <p className='text-lg font-semibold capitalize'>
+              <p className='text-lg font-semibold capitalize text-foreground'>
                 {society.settings.payout_cycle}
               </p>
             </div>
             <div>
               <p className='text-sm text-muted-foreground'>Late Fee</p>
-              <p className='text-lg font-semibold'>
+              <p className='text-lg font-semibold text-foreground'>
                 ₦{society.settings.late_fee?.toLocaleString() || '0'}
+              </p>
+            </div>
+            <div>
+              <p className='text-sm text-muted-foreground'>
+                Default T-Bill Allocation
+              </p>
+              <p className='text-lg font-semibold text-foreground'>
+                {society.settings.tbill_allocation_percentage ?? 5}% of pool
+              </p>
+            </div>
+            <div>
+              <p className='text-sm text-muted-foreground'>
+                T-Bill Lock Duration
+              </p>
+              <p className='text-lg font-semibold text-foreground'>
+                {society.settings.tbill_duration_days ?? 91} Days (3 Months)
               </p>
             </div>
           </div>

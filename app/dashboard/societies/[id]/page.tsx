@@ -1,6 +1,7 @@
 // app/societies/[id]/page.tsx
 // This is now the "Overview" page only
 
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -14,10 +15,12 @@ import {
 } from '@tabler/icons-react';
 import { Textarea } from '@/components/ui/textarea';
 import { getSociety } from '../../../actions/societies';
+import { getSocietyInvestmentCycle } from '../../../actions/investment';
 import { SocietyProps } from '@/types';
 import RightAside from '@/components/right-aside';
 import { notFound } from 'next/navigation';
 import SocietyHeader from '@/components/society-header';
+import { CommunityWealthWidget } from '@/components/community-wealth-widget';
 
 export default async function SocietyOverviewPage({
   params,
@@ -30,6 +33,8 @@ export default async function SocietyOverviewPage({
   if (!society) {
     notFound();
   }
+
+  const cycle = await getSocietyInvestmentCycle(id);
 
   return (
     <div className='min-h-screen bg-background flex flex-col'>
@@ -95,6 +100,9 @@ export default async function SocietyOverviewPage({
               </Card>
             </div>
 
+            {/* Community Wealth Widget */}
+            <CommunityWealthWidget societyId={id} cycle={cycle} />
+
             {/* Forum / Discussion Input */}
             <div className='rounded-3xl border bg-muted/30 px-4 py-4 focus-within:border-primary/50 transition-colors'>
               <div className='flex flex-col items-start gap-3'>
@@ -141,8 +149,18 @@ export default async function SocietyOverviewPage({
             </div>
 
             {/* Placeholder */}
-            <div className='text-center text-muted-foreground py-12'>
-              <p>No discussions yet. Be the first to start one!</p>
+            <div className='flex flex-col items-center justify-center text-center py-10 px-4 border rounded-xl bg-card/60 shadow-2xs space-y-3'>
+              <Image
+                src='/illustrations/undraw_social-media-post_tg7l.svg'
+                alt='No discussions yet'
+                width={200}
+                height={150}
+                className='h-32 w-auto mb-1'
+              />
+              <h4 className='font-bold text-foreground text-base'>No discussions yet</h4>
+              <p className='text-xs text-muted-foreground max-w-sm leading-relaxed'>
+                Be the first to start a conversation, share community updates, or post a question in this society!
+              </p>
             </div>
           </div>
 

@@ -6,12 +6,14 @@ import {
   NextDueDateResponse,
   SocietyDocument,
   FinancialPassport,
+  InvestmentCycle,
+  FinancialOpportunity,
 } from '@/types';
 
 export const MOCK_CURRENT_USER = {
   id: 1,
   name: 'Adaora Nwosu',
-  email: 'adaora@asusu.app',
+  email: 'adaora@coopshot.app',
   avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
 };
 
@@ -311,7 +313,7 @@ export const MOCK_DOCUMENTS: SocietyDocument[] = [
   {
     id: 1,
     type: 'Constitution',
-    file_url: '/documents/asusu_bylaws.pdf',
+    file_url: '/documents/coopshot_bylaws.pdf',
     description: 'Official Group Constitution & Bye-laws (2026 Edition)',
     uploaded_by: 'Adaora Nwosu',
     uploaded_at: '2025-01-10T12:00:00Z',
@@ -386,3 +388,108 @@ export const MOCK_FINANCIAL_PASSPORT: FinancialPassport = {
     },
   ],
 };
+
+export const MOCK_INVESTMENT_CYCLE: InvestmentCycle = {
+  id: 'tbill-cycle-2026-03',
+  society_id: 1,
+  society_name: 'Victoria Island Savers Guild',
+  total_pool_assets: 50000000,
+  allocation_percentage: 5,
+  principal_amount: 2500000,
+  instrument_name: '91-Day Federal Republic of Nigeria Treasury Bill',
+  tenor_days: 91,
+  annual_yield_rate: 17.5,
+  expected_returns: 109375,
+  status: 'active',
+  started_at: '2026-07-01',
+  maturity_date: '2026-09-30',
+  milestones: [
+    {
+      stage: 1,
+      title: 'Pool Allocation Reserved',
+      description: 'Executive reserved 5% (₦2,500,000) of society total assets.',
+      date: '01 Jul 2026',
+      completed: true,
+    },
+    {
+      stage: 2,
+      title: 'T-Bill Subscription Executed',
+      description: 'Auction order placed with CBN/SEC licensed primary dealer.',
+      date: '05 Jul 2026',
+      completed: true,
+    },
+    {
+      stage: 3,
+      title: 'Active Interest Accrual',
+      description: 'Earning daily compounding yield at 17.5% per annum.',
+      date: 'Today (Active)',
+      completed: true,
+    },
+    {
+      stage: 4,
+      title: 'Maturity & Returns Distribution',
+      description: 'Principal (₦2.5M) + Yield (₦109.3k) credited to society pool.',
+      date: '30 Sep 2026',
+      completed: false,
+    },
+  ],
+};
+
+export const MOCK_FINANCIAL_OPPORTUNITIES: FinancialOpportunity[] = [
+  {
+    id: 'opp-1',
+    title: 'National Treasury Bill Engine (5%+ Pool)',
+    description: 'Low-risk sovereign government debt instruments backed by Central Bank of Nigeria.',
+    category: 'investment',
+    status: 'active',
+    required_level: 'Level 1 (Entry Level)',
+    benefit_summary: 'Earning 17.5% annualized yield return credited directly to society pool.',
+    partner_name: 'Central Bank of Nigeria / SEC Licensed Primary Dealers',
+    interest_rate_or_yield: '17.5% p.a.',
+  },
+  {
+    id: 'opp-2',
+    title: 'Cooperative Working Capital Line',
+    description: 'Fast, collateral-free credit lines for emergency inventory or business expansion.',
+    category: 'credit',
+    status: 'unlocked',
+    required_level: 'Level 3 — Trusted Saver',
+    benefit_summary: 'Pre-approved credit line up to ₦1,500,000 at 1.2% monthly interest.',
+    partner_name: 'CoopShot Cooperative Credit Union Network',
+    interest_rate_or_yield: '1.2% / month',
+    max_limit: '₦1,500,000',
+  },
+  {
+    id: 'opp-3',
+    title: 'Micro Health & Agricultural Group Insurance',
+    description: 'Affordable family health coverage, hospital cash benefits, and crop damage insurance.',
+    category: 'insurance',
+    status: 'locked',
+    required_level: 'Level 4 — Community Veteran',
+    benefit_summary: 'Comprehensive health & accident coverage for ₦1,200 / month per family.',
+    partner_name: 'Leadway Assurance / Micro-Insurance Alliance',
+    max_limit: '₦5,000,000 Coverage',
+  },
+  {
+    id: 'opp-4',
+    title: 'SME Equipment & Asset Financing',
+    description: 'Lease-to-own machinery, POS terminals, solar power systems, and delivery vehicles.',
+    category: 'sme',
+    status: 'locked',
+    required_level: 'Level 4 — Community Veteran',
+    benefit_summary: 'Finance capital assets with 10% down-payment and flexible 12-month repayment.',
+    partner_name: 'Lagos SME Development Finance Ltd',
+    max_limit: '₦3,500,000 Asset Value',
+  },
+  {
+    id: 'opp-5',
+    title: 'Micro-Pensions & Voluntary Retirement Pool',
+    description: 'Flexible long-term micro-pension scheme with tax-free growth and compounding.',
+    category: 'pension',
+    status: 'locked',
+    required_level: 'Level 5 — Financial Anchor',
+    benefit_summary: 'Build a secure retirement fund starting from as low as ₦500 daily.',
+    partner_name: 'National Pension Commission (PenCom) Registered PFA',
+    interest_rate_or_yield: '14.2% Compounding',
+  },
+];
