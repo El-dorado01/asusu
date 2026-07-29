@@ -137,6 +137,12 @@ export interface PassportMilestone {
   completed_at?: string | null;
 }
 
+// Fields dropped from an earlier mock-data version of this type:
+// discipline_score, total_investment_returns, completed_cycles — the real
+// backend (see BACKEND_INTEGRATION.md) has no honest per-member value for
+// these (investment cycles/returns are pooled at the group level, not
+// attributable to one member's exact naira), so rather than fabricate numbers
+// they were removed here and from the components that rendered them.
 export interface FinancialPassport {
   user_id: number;
   user_name: string;
@@ -144,8 +150,8 @@ export interface FinancialPassport {
   trust_level: string;
   trust_status: string;
   consistency_score: number;
-  discipline_score: number;
   repayment_score: number;
+  discipline_score: number;
   investment_score: number;
   total_savings: number;
   total_contributions: number;

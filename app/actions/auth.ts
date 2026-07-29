@@ -21,7 +21,9 @@ export async function loginAction(formData: unknown) {
   const { credential, password } = validated.data;
 
   try {
-    /* ORIGINAL BACKEND CALL:
+    // This backend only supports email+password login — "credential" here is
+    // always an email (asusu's UI copy still says "Email or Phone", but phone
+    // login isn't implemented server-side).
     const res = await apiFetch(
       '/auth/login',
       {
@@ -30,29 +32,26 @@ export async function loginAction(formData: unknown) {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ credential, password }),
+        body: JSON.stringify({ email: credential, password }),
       },
       true
     );
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      const message =
-        errorData.message ||
-        errorData.errors?.credential?.[0] ||
-        'Invalid credentials';
+      const message = errorData.message || 'Invalid credentials';
       return { error: message };
     }
 
-    const data = await res.json();
-    */
-
-    // MOCK DATA MODE:
+    const backendUser = await res.json();
     const data = {
-      token: 'mock_token_12345',
+      token: backendUser.token,
       user: {
-        ...MOCK_CURRENT_USER,
-        name: credential.includes('@') ? credential.split('@')[0] : credential,
+        id: backendUser.id,
+        name: backendUser.name,
+        email: backendUser.email,
+        phone: backendUser.phone,
+        avatar_url: null,
       },
     };
 
@@ -124,8 +123,13 @@ export async function registerAction(formData: unknown) {
   const { name, email, phone, password, password_confirmation } =
     validated.data;
 
+  if (password !== password_confirmation) {
+    return { error: 'Passwords do not match' };
+  }
+
   try {
-    /* ORIGINAL BACKEND CALL:
+    // This backend doesn't take password_confirmation — the match check above
+    // covers what it was for.
     const res = await apiFetch(
       '/auth/register',
       {
@@ -136,10 +140,9 @@ export async function registerAction(formData: unknown) {
         },
         body: JSON.stringify({
           name,
-          email: email,
+          email,
           phone: phone || null,
           password,
-          password_confirmation,
         }),
       },
       true
@@ -147,23 +150,19 @@ export async function registerAction(formData: unknown) {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      const message =
-        errorData.message || errorData.errors?.[0] || 'Registration failed';
+      const message = errorData.message || 'Registration failed';
       return { error: message };
     }
 
-    const data = await res.json();
-    */
-
-    // MOCK DATA MODE:
+    const backendUser = await res.json();
     const data = {
-      token: 'mock_token_12345',
+      token: backendUser.token,
       user: {
-        id: 1,
-        name,
-        email,
-        phone: phone || null,
-        avatar_url: MOCK_CURRENT_USER.avatar_url,
+        id: backendUser.id,
+        name: backendUser.name,
+        email: backendUser.email,
+        phone: backendUser.phone,
+        avatar_url: null,
       },
     };
 
@@ -190,6 +189,8 @@ export async function registerAction(formData: unknown) {
   }
 }
 
+// forgotPasswordAction / resendOtpAction / resetPasswordAction below are still
+// mock-only — the backend has no password-reset/OTP endpoints yet.
 export async function forgotPasswordAction(formData: unknown) {
   const validated = z.object({ email: z.string().email() }).safeParse(formData);
   if (!validated.success) return { error: 'Invalid email' };

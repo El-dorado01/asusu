@@ -97,6 +97,8 @@ export function QuickCreateSociety({ from }: { from: string }) {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [monthlyAmount, setMonthlyAmount] = useState('');
+  const [registrationFee, setRegistrationFee] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [coFounderEmail, setCoFounderEmail] = useState('');
@@ -140,6 +142,14 @@ export function QuickCreateSociety({ from }: { from: string }) {
       toast.error('Society name is required');
       return;
     }
+    if (!monthlyAmount || Number(monthlyAmount) <= 0) {
+      toast.error('Monthly contribution amount must be greater than 0');
+      return;
+    }
+    if (registrationFee === '' || Number(registrationFee) < 0) {
+      toast.error('Registration fee cannot be negative');
+      return;
+    }
 
     startTransition(async () => {
       try {
@@ -147,6 +157,8 @@ export function QuickCreateSociety({ from }: { from: string }) {
         formData.append('name', name.trim());
         if (description.trim())
           formData.append('description', description.trim());
+        formData.append('monthlyAmount', monthlyAmount);
+        formData.append('registrationFee', registrationFee);
         if (avatarFile) formData.append('avatar', avatarFile);
 
         const society = await createSociety(formData);
@@ -187,6 +199,8 @@ export function QuickCreateSociety({ from }: { from: string }) {
     setCoFounderEmail('');
     setName('');
     setDescription('');
+    setMonthlyAmount('');
+    setRegistrationFee('');
     setAvatarFile(null);
     setAvatarPreview(null);
     if (societyId) {
@@ -222,6 +236,31 @@ export function QuickCreateSociety({ from }: { from: string }) {
               rows={4}
               className='resize-none'
             />
+          </div>
+
+          <div className='grid grid-cols-2 gap-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='monthlyAmount'>Monthly amount (₦)</Label>
+              <Input
+                id='monthlyAmount'
+                type='number'
+                min='1'
+                step='0.01'
+                value={monthlyAmount}
+                onChange={(e) => setMonthlyAmount(e.target.value)}
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='registrationFee'>Registration fee (₦)</Label>
+              <Input
+                id='registrationFee'
+                type='number'
+                min='0'
+                step='0.01'
+                value={registrationFee}
+                onChange={(e) => setRegistrationFee(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className='space-y-3'>

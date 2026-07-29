@@ -221,17 +221,17 @@ export function FinancialPassportCard({ passport }: FinancialPassportCardProps) 
                 </p>
               </div>
 
-              {/* Loan Repayment History */}
+              {/* Payment Reliability */}
               <div className='space-y-1.5'>
                 <div className='flex justify-between text-sm font-medium'>
-                  <span>Repayment Discipline</span>
+                  <span>Payment Reliability</span>
                   <span className='font-bold text-primary'>
                     {passport.repayment_score}%
                   </span>
                 </div>
                 <Progress value={passport.repayment_score} className='h-2 bg-muted' />
                 <p className='text-xs text-muted-foreground'>
-                  100% on-time repayment record across internal cooperative credit rotations.
+                  Share of payment attempts — registration fees and monthly dues — that succeeded.
                 </p>
               </div>
 

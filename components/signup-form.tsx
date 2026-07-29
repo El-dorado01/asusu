@@ -27,6 +27,7 @@ import Link from 'next/link';
 import { registerAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { IconLoader } from '@tabler/icons-react';
+import { useUser } from '@/lib/auth-context';
 
 const signupSchema = z
   .object({
@@ -51,6 +52,7 @@ export function SignupForm({
 }: React.ComponentProps<'div'>) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const { refetch } = useUser();
 
   const {
     register,
@@ -76,6 +78,9 @@ export function SignupForm({
         toast.success('Welcome!',{
           description: 'Your account has been created successfully.',
         });
+        // AuthProvider only checks auth state once on initial mount, so without
+        // this, Protected still sees user:null post-signup and bounces back to /login.
+        await refetch();
         router.push('/dashboard');
         router.refresh();
       }

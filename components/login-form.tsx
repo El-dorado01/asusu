@@ -22,6 +22,7 @@ import { loginAction } from '@/app/actions/auth';
 import { toast } from 'sonner';
 import { IconLoader } from '@tabler/icons-react';
 import { FieldError } from './ui/field';
+import { useUser } from '@/lib/auth-context';
 
 const loginSchema = z.object({
   credential: z.string().min(1, 'Email or phone is required'),
@@ -36,6 +37,7 @@ export function LoginForm({
 }: React.ComponentProps<'div'>) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const { refetch } = useUser();
 
   const {
     register,
@@ -57,8 +59,11 @@ export function LoginForm({
         toast.success('Welcome back!', {
           description: 'You have been logged in successfully.',
         });
-        router.push('/dashboard'); // or wherever you want after login
-        router.refresh(); // to revalidate server components if needed
+        // AuthProvider only checks auth state once on initial mount, so without
+        // this, Protected still sees user:null post-login and bounces back here.
+        await refetch();
+        router.push('/dashboard');
+        router.refresh();
       }
     });
   };

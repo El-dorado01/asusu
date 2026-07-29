@@ -5,43 +5,45 @@ import { apiFetch } from '@/lib/api';
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from './getCurrentUser';
 import { SocietyDocument, SocietyProps } from '@/types';
-import {
-  MOCK_SOCIETIES,
-  MOCK_ACTIVE_SOCIETIES,
-  MOCK_MEMBERS,
-  MOCK_LEDGER,
-  MOCK_PENALTIES,
-  MOCK_NEXT_DUE,
-  MOCK_INVITES,
-  MOCK_DOCUMENTS,
-  MOCK_FINANCIAL_PASSPORT,
-} from '@/lib/mock-data';
+import { MOCK_MEMBERS, MOCK_SOCIETIES } from '@/lib/mock-data';
+
+function serializeDiscoveredGroup(g: any): SocietyProps {
+  return {
+    id: g.id,
+    name: g.name,
+    avatar_url: g.avatarUrl || '',
+    description: g.description || '',
+    is_public: true,
+    verified: false,
+    created_at: g.createdAt,
+    total_members: g.memberCount ?? 0,
+    member_count: g.memberCount ?? 0,
+    total_contributions: 0,
+    can_join: g.status === 'forming',
+    can_manage: false,
+    founder: { id: 0, name: '' },
+    settings: {
+      contribution_amount: Number(g.monthlyAmount),
+      frequency: 'monthly',
+      payout_cycle: 'fixed',
+      late_fee: 0,
+    },
+  };
+}
 
 export async function getRecommendedSocieties({
   page = 1,
 }: { page?: number } = {}) {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/societies/recommended?page=${page}`,
-    {
-      method: 'GET',
-      next: { revalidate: 300 },
-    },
-    true
-  );
-
+  const res = await apiFetch(`/groups/recommended?page=${page}`, { method: 'GET', cache: 'no-store' }, true);
   if (!res.ok) {
     throw new Error('Failed to fetch recommended societies');
   }
-
-  return res.json();
-  */
-
+  const data = await res.json();
   return {
-    data: MOCK_SOCIETIES,
-    current_page: page,
-    last_page: 1,
-    total: MOCK_SOCIETIES.length,
+    data: data.data.map(serializeDiscoveredGroup),
+    current_page: data.current_page,
+    last_page: data.last_page,
+    total: data.total,
   };
 }
 
@@ -49,70 +51,113 @@ export async function getPublicSocieties({
   search = '',
   page = 1,
 }: { search?: string; page?: number } = {}) {
-  /* ORIGINAL BACKEND CALL:
-  let endpoint = `/societies/public?page=${page}`;
-
+  let endpoint = `/groups/public?page=${page}`;
   if (search.trim()) {
     endpoint += `&search=${encodeURIComponent(search.trim())}`;
   }
 
-  const res = await apiFetch(
-    endpoint,
-    {
-      method: 'GET',
-    },
-    true
-  );
-
+  const res = await apiFetch(endpoint, { method: 'GET', cache: 'no-store' }, true);
   if (!res.ok) {
     throw new Error('Failed to fetch public societies');
   }
-
-  return res.json();
-  */
-
-  const filtered = search.trim()
-    ? MOCK_SOCIETIES.filter(
-        (s) =>
-          s.name.toLowerCase().includes(search.toLowerCase()) ||
-          s.description.toLowerCase().includes(search.toLowerCase())
-      )
-    : MOCK_SOCIETIES;
-
+  const data = await res.json();
   return {
-    data: filtered,
-    current_page: page,
-    last_page: 1,
-    total: filtered.length,
+    data: data.data.map(serializeDiscoveredGroup),
+    current_page: data.current_page,
+    last_page: data.last_page,
+    total: data.total,
   };
 }
 
-export async function getSociety(id: string) {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/societies/${id}`,
-    {
-      method: 'GET',
-      next: { revalidate: 60 },
-    },
-    true
-  );
+// Join a public society directly — no invite code required. Asusu's original
+// UI has no "join public society" button wired anywhere yet (society-cards.tsx
+// only links to "View Society"), but the action is here for when it does.
+export async function joinPublicSociety(societyId: string) {
+  const res = await apiFetch(`/groups/${societyId}/join-public`, { method: 'POST' }, true);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to join society');
+  }
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/societies');
+  return res.json();
+}
+
+// Real backend call. Note: this backend's groups have concepts asusu's mock
+// SocietyProps doesn't (a pending-registration-fee gate, forming/active
+// lifecycle) and asusu has concepts this backend doesn't (co-founder,
+// public/private visibility, verification) — the mapping below is best-effort;
+// see asusu/BACKEND_INTEGRATION.md for the exact list of what's real vs mock.
+export async function getSociety(id: string): Promise<SocietyProps> {
+  const res = await apiFetch(`/groups/${id}`, { method: 'GET', cache: 'no-store' }, true);
 
   if (!res.ok) {
     throw new Error('Failed to fetch society');
   }
-  const data = await res.json();
+  const group = await res.json();
 
-  return data.society;
-  */
+  if (group.membershipStatus === 'pending') {
+    // This backend gates monthly contributions behind a one-time registration
+    // fee that asusu's UI has no concept of yet — surfaced here as best-effort
+    // placeholders rather than crashing the page.
+    return {
+      id: group.id,
+      name: group.name,
+      avatar_url: '',
+      description: group.description || '',
+      is_public: false,
+      verified: false,
+      created_at: new Date().toISOString(),
+      total_members: 0,
+      total_contributions: 0,
+      member_count: 0,
+      can_join: false,
+      can_manage: false,
+      founder: { id: 0, name: 'Unknown' },
+      co_founder: null,
+      settings: {
+        contribution_amount: Number(group.monthlyAmount),
+        frequency: 'monthly',
+        payout_cycle: 'fixed',
+        late_fee: 0,
+      },
+    };
+  }
 
-  const found = MOCK_SOCIETIES.find((s) => s.id === Number(id));
-  return (
-    found || {
-      ...MOCK_SOCIETIES[0],
-      id: Number(id),
-    }
-  );
+  return {
+    id: group.id,
+    name: group.name,
+    avatar_url: '',
+    description: group.description || '',
+    is_public: false,
+    verified: false,
+    created_at: group.createdAt,
+    total_members: group.members?.length || 0,
+    total_contributions: Number(group.totalCollected || 0),
+    member_count: group.members?.length || 0,
+    can_join: false,
+    can_manage: group.myRole === 'admin',
+    isFounder: group.myRole === 'admin',
+    isCoFounder: false,
+    isExecutive: false,
+    founder: {
+      id: group.creator?.id ?? 0,
+      name: group.creator?.name ?? 'Unknown',
+      avatar_url: null,
+    },
+    co_founder: null,
+    settings: {
+      contribution_amount: Number(group.monthlyAmount),
+      frequency: 'monthly',
+      payout_cycle: 'fixed',
+      late_fee: 0,
+    },
+    active_members: (group.members || []).map((m: any) => ({
+      id: m.userId,
+      name: m.name,
+      avatar_url: null,
+    })),
+  };
 }
 
 export async function getSocietyMembers(id: string) {
@@ -172,33 +217,26 @@ export async function getSocietyMembers(id: string) {
 }
 
 export async function getSocietyLedger(id: string) {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/societies/${id}/ledger`,
-    {
-      method: 'GET',
-      next: { revalidate: 60 },
-    },
-    true
-  );
+  const [society, res] = await Promise.all([
+    getSociety(id),
+    apiFetch(`/groups/${id}/ledger`, { method: 'GET', cache: 'no-store' }, true),
+  ]);
 
   if (!res.ok) throw new Error('Failed to fetch ledger');
   const data = await res.json();
-  return data;
-  */
 
-  const society = await getSociety(id);
   return {
     society,
-    ledger: MOCK_LEDGER,
-    summary: {
-      total_contributed: 900000,
-      total_payouts: 3600000,
-      current_balance: 1200000,
-    },
+    ledger: data.ledger,
+    summary: data.summary,
   };
 }
 
+// Intentionally still mock: this backend has no rotating-payout concept at
+// all. Contributions fund a pooled treasury bill investment (5% of each
+// monthly contribution), not a rotating "whose turn is it" payout — building
+// a real rotation queue would mean inventing a different product mechanic,
+// not just wiring an endpoint. See asusu/BACKEND_INTEGRATION.md.
 export async function getSocietyRotationQueue(id: string) {
   const user = await getCurrentUser();
 
@@ -262,100 +300,71 @@ export async function getSocietyRotationQueue(id: string) {
   };
 }
 
+// Derived from real contribution history: one entry per past month (since
+// this member's registration was activated) with no successful monthly
+// contribution — only meaningful once the group admin sets a non-zero late
+// fee in settings; otherwise this is honestly an empty list, not mock data.
 export async function getMyPenalties(id: string) {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/societies/${id}/penalties`,
-    {
-      method: 'GET',
-      cache: 'no-store',
-    },
-    true
-  );
+  const res = await apiFetch(`/groups/${id}/penalties`, { method: 'GET', cache: 'no-store' }, true);
   if (!res.ok) throw new Error('Failed to fetch penalties');
-  const data = await res.json();
-  return data;
-  */
-
-  return MOCK_PENALTIES;
+  return res.json();
 }
 
+// This backend has no per-day due date — "due" is the end of the current
+// calendar month once the group has been started by its admin.
 export async function getNextDueDate(id: string) {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/societies/${id}/next-due`,
-    {
-      method: 'GET',
-      cache: 'no-store',
-    },
-    true
-  );
+  const res = await apiFetch(`/groups/${id}/next-due`, { method: 'GET', cache: 'no-store' }, true);
   if (!res.ok) throw new Error('Failed to fetch next due date');
-  const data = await res.json();
-  return data;
-  */
-
-  return MOCK_NEXT_DUE;
+  return res.json();
 }
 
 export async function createSociety(formData: FormData) {
-  for (const [key, value] of formData.entries()) {
-    if (value === '' || (value instanceof File && value.size === 0)) {
-      formData.delete(key);
-    }
-  }
+  // This backend has no image upload endpoint, so an avatar picked in the
+  // dialog is silently dropped — everything else (name, description, the two
+  // required money fields) goes through as real JSON, since this backend
+  // takes application/json, not multipart form data.
+  const name = (formData.get('name') as string) || '';
+  const description = (formData.get('description') as string) || undefined;
+  const monthlyAmount = formData.get('monthlyAmount') as string;
+  const registrationFee = formData.get('registrationFee') as string;
 
-  /* ORIGINAL BACKEND CALL:
   const res = await apiFetch(
-    '/societies',
+    '/groups',
     {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, monthlyAmount, registrationFee }),
     },
     true
   );
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
-
-    if (error.errors) {
-      const messages = Object.values(error.errors).flat() as string[];
-      throw new Error(messages[0]);
-    }
-
     throw new Error(error.message || 'Failed to create society');
   }
 
-  const data = await res.json();
-  return data.society;
-  */
-
-  const name = (formData.get('name') as string) || 'New Society';
-  const description = (formData.get('description') as string) || 'Custom society created locally.';
+  const group = await res.json();
 
   const newSociety: SocietyProps = {
-    id: Date.now(),
-    name,
-    description,
-    avatar_url: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=150',
-    is_public: true,
+    id: group.id,
+    name: group.name,
+    description: group.description || '',
+    avatar_url: '',
+    is_public: false,
     verified: false,
-    created_at: new Date().toISOString(),
+    created_at: group.createdAt,
     total_members: 1,
     member_count: 1,
     total_contributions: 0,
     can_join: false,
     can_manage: true,
     isFounder: true,
-    founder: {
-      id: 1,
-      name: 'Adaora Nwosu',
-    },
+    founder: { id: 0, name: '' },
     settings: {
-      contribution_amount: 100000,
+      contribution_amount: Number(group.monthlyAmount),
       frequency: 'monthly',
-      payout_cycle: 'rotating',
-      late_fee: 2500,
+      payout_cycle: 'fixed',
+      late_fee: 0,
     },
   };
 
@@ -366,12 +375,12 @@ export async function createSociety(formData: FormData) {
 }
 
 export async function inviteMember(societyId: string, email: string) {
-  /* ORIGINAL BACKEND CALL:
   const res = await apiFetch(
-    `/societies/${societyId}/members`,
+    `/groups/${societyId}/invites`,
     {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role: 'member' }),
     },
     true
   );
@@ -383,24 +392,23 @@ export async function inviteMember(societyId: string, email: string) {
 
   const data = await res.json();
   revalidatePath(`/dashboard/societies/${societyId}/members`);
-  return data;
-  */
-
-  revalidatePath(`/dashboard/societies/${societyId}/members`);
-  return { message: `Invitation sent to ${email}` };
+  return { message: `Invitation sent to ${email}`, invite: data };
 }
 
 export async function getSocietySettings(societyId: string) {
   return await getSocietyMembers(societyId);
 }
 
+// "Co-founder" reuses this backend's existing admin/member role split — an
+// accepted co-founder invite makes that person a second admin on the group,
+// rather than adding a distinct third role tier.
 export async function inviteCoFounder(societyId: string, email: string) {
-  /* ORIGINAL BACKEND CALL:
   const res = await apiFetch(
-    `/societies/${societyId}/invite-co-founder`,
+    `/groups/${societyId}/invites`,
     {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role: 'admin' }),
     },
     true
   );
@@ -413,24 +421,19 @@ export async function inviteCoFounder(societyId: string, email: string) {
   const data = await res.json();
   revalidatePath(`/dashboard/societies/${societyId}/settings`);
   revalidatePath(`/dashboard/societies/${societyId}`);
-  return data;
-  */
-
-  revalidatePath(`/dashboard/societies/${societyId}/settings`);
-  revalidatePath(`/dashboard/societies/${societyId}`);
-  return { message: `Co-founder invitation sent to ${email}` };
+  return { message: `Co-founder invitation sent to ${email}`, invite: data };
 }
 
 export async function toggleSocietyVisibility(
   societyId: string,
   isPublic: boolean
 ) {
-  /* ORIGINAL BACKEND CALL:
   const res = await apiFetch(
-    `/admin/societies/${societyId}/visibility`,
+    `/groups/${societyId}/visibility`,
     {
       method: 'PATCH',
-      body: JSON.stringify({ is_public: isPublic }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublic }),
     },
     true
   );
@@ -442,14 +445,14 @@ export async function toggleSocietyVisibility(
 
   revalidatePath(`/dashboard/societies/${societyId}/settings`);
   revalidatePath(`/dashboard/societies/${societyId}`);
-  return await res.json();
-  */
-
-  revalidatePath(`/dashboard/societies/${societyId}/settings`);
-  revalidatePath(`/dashboard/societies/${societyId}`);
-  return { success: true, is_public: isPublic };
+  return res.json();
 }
 
+// Note: this backend has no "frequency" or "payout_cycle" concept (every
+// group is a fixed monthly amount, no rotating payouts) — only
+// contribution_amount (-> monthlyAmount) and late_fee (-> lateFeeAmount) map
+// to anything real. Monthly amount can only change while the group is still
+// "forming" — this backend rejects the change otherwise.
 export async function updateSocietySettings(
   societyId: string,
   data: {
@@ -459,12 +462,15 @@ export async function updateSocietySettings(
     late_fee?: number;
   }
 ) {
-  /* ORIGINAL BACKEND CALL:
   const res = await apiFetch(
-    `/admin/societies/${societyId}/settings`,
+    `/groups/${societyId}/settings`,
     {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        monthlyAmount: data.contribution_amount,
+        lateFeeAmount: data.late_fee,
+      }),
     },
     true
   );
@@ -479,49 +485,50 @@ export async function updateSocietySettings(
   revalidatePath(`/dashboard/societies/${societyId}/settings`);
   revalidatePath(`/dashboard/societies/${societyId}`);
 
-  return result;
-  */
-
-  revalidatePath(`/dashboard/societies/${societyId}/settings`);
-  revalidatePath(`/dashboard/societies/${societyId}`);
-
-  return { success: true, settings: data };
+  return { success: true, settings: result };
 }
 
 export async function getSocietyDocuments(
   societyId: string
 ): Promise<SocietyDocument[]> {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/admin/societies/${societyId}/documents`,
-    {},
-    true
-  );
-
+  const res = await apiFetch(`/groups/${societyId}/documents`, { method: 'GET', cache: 'no-store' }, true);
   if (!res.ok) {
     throw new Error('Failed to load society documents');
   }
+  const documents = await res.json();
+  return documents.map((d: any) => ({
+    id: d.id,
+    type: d.type,
+    file_url: d.fileUrl,
+    description: d.description,
+    uploaded_by: String(d.uploadedByUserId),
+    uploaded_at: d.createdAt,
+    approved: d.approved,
+  }));
+}
 
-  const data = await res.json();
-  return data.documents || [];
-  */
-
-  return MOCK_DOCUMENTS;
+// Upload a document (admin only). formData must contain "file", plus "type"
+// and optionally "description" — matches this backend's multipart contract.
+export async function uploadSocietyDocument(societyId: string, formData: FormData) {
+  const res = await apiFetch(`/groups/${societyId}/documents`, { method: 'POST', body: formData }, true);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || 'Failed to upload document');
+  }
+  revalidatePath(`/dashboard/societies/${societyId}/settings`);
+  return res.json();
 }
 
 export async function updateSocietyAvatar(
   societyId: string,
   formData: FormData
 ) {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/admin/societies/${societyId}/avatar`,
-    {
-      method: 'POST',
-      body: formData,
-    },
-    true
-  );
+  // This backend expects the file under the field name "avatar"
+  const file = formData.get('avatar') || formData.get('file');
+  const uploadData = new FormData();
+  if (file) uploadData.append('avatar', file);
+
+  const res = await apiFetch(`/groups/${societyId}/avatar`, { method: 'POST', body: uploadData }, true);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
@@ -533,116 +540,92 @@ export async function updateSocietyAvatar(
   revalidatePath(`/dashboard/societies/${societyId}/settings`);
   revalidatePath(`/dashboard/societies/${societyId}`);
 
-  return data.avatar_url;
-  */
-
-  const newAvatarUrl = 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=150';
-
-  revalidatePath(`/dashboard/societies/${societyId}/settings`);
-  revalidatePath(`/dashboard/societies/${societyId}`);
-
-  return newAvatarUrl;
+  return data.avatarUrl as string;
 }
 
 export async function getMyActiveSocieties() {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    '/societies',
-    { method: 'GET', next: { revalidate: 300 } },
-    true
-  );
+  const res = await apiFetch('/groups', { method: 'GET', cache: 'no-store' }, true);
 
   if (!res.ok) {
     throw new Error('Failed to fetch my active societies');
   }
 
-  const data = await res.json();
-  return {
-    active_societies: data.active_societies,
-    total: data.total,
-  };
-  */
+  const groups = await res.json();
+
+  const active_societies = groups.map((g: any) => ({
+    id: String(g.id),
+    name: g.name,
+    description: g.description || '',
+    avatar_url: '',
+    is_public: false,
+    verified: false,
+    // asusu has no concept of the one-time registration fee this backend
+    // gates monthly contributions behind — a "pending" membership just shows
+    // as a normal member card here rather than the real payment-due state.
+    role: g.myRole === 'admin' ? 'founder' : 'member',
+    total_members: g.memberCount ?? 0,
+    settings: {
+      contribution_amount: Number(g.monthlyAmount),
+      frequency: 'monthly' as const,
+      payout_cycle: 'fixed' as const,
+      late_fee: 0,
+    },
+    next_due: { date: null, days_until: null },
+  }));
 
   return {
-    active_societies: MOCK_ACTIVE_SOCIETIES,
-    total: MOCK_ACTIVE_SOCIETIES.length,
+    active_societies,
+    total: active_societies.length,
   };
 }
 
+// Asusu's UI treats "invite.id" as an opaque identifier for the invite entry
+// itself (see components/invite-cards-list.tsx) — it maps 1:1 onto this
+// backend's own GroupInvite.id, so no ID translation is needed anywhere else.
 export async function getPendingInvites() {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    '/societies/invites/pending',
-    {
-      method: 'GET',
-      next: { revalidate: 300 },
-    },
-    true
-  );
-
+  const res = await apiFetch('/invites', { method: 'GET', cache: 'no-store' }, true);
   if (!res.ok) {
     throw new Error('Failed to fetch pending invites');
   }
-
   const data = await res.json();
-  return {
-    pending_invites: data.pending_invites,
-    total: data.total,
-  };
-  */
 
-  return {
-    pending_invites: MOCK_INVITES,
-    total: MOCK_INVITES.length,
-  };
+  const pending_invites = data.data.map((invite: any) => ({
+    id: invite.id,
+    name: invite.group.name,
+    description: invite.group.description,
+    avatar_url: invite.group.avatarUrl,
+    is_public: invite.group.isPublic,
+    invited_by: invite.invitedBy?.name || 'Unknown',
+    invited_at: invite.createdAt,
+    invite_type: invite.role === 'admin' ? 'co-founder' : 'member',
+    role: invite.role === 'admin' ? 'Co-Founder' : 'Member',
+  }));
+
+  return { pending_invites, total: data.total };
 }
 
 export async function acceptInvite(
-  societyId: string,
+  inviteId: string,
   inviteType: 'member' | 'co-founder'
 ) {
-  /* ORIGINAL BACKEND CALL:
-  const endpoint =
-    inviteType === 'co-founder'
-      ? `/societies/${societyId}/accept-co-founder`
-      : `/societies/${societyId}/accept-invite`;
-
-  const res = await apiFetch(
-    endpoint,
-    {
-      method: 'POST',
-    },
-    true
-  );
+  const res = await apiFetch(`/invites/${inviteId}/accept`, { method: 'POST' }, true);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.message || 'Failed to accept invite');
   }
 
-  revalidatePath('/dashboard/invites');
-  revalidatePath('/dashboard/societies');
-  revalidatePath(`/dashboard/societies/${societyId}`);
-
-  return await res.json();
-  */
+  const data = await res.json();
 
   revalidatePath('/dashboard/invites');
   revalidatePath('/dashboard/societies');
-  revalidatePath(`/dashboard/societies/${societyId}`);
+  revalidatePath(`/dashboard/societies/${data.groupId}`);
 
   return { success: true, message: 'Invite accepted' };
 }
 
-export async function declineInvite(societyId: string) {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch(
-    `/societies/${societyId}/decline-invite`,
-    {
-      method: 'DELETE',
-    },
-    true
-  );
+export async function declineInvite(inviteId: string) {
+  const res = await apiFetch(`/invites/${inviteId}/decline`, { method: 'POST' }, true);
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
@@ -653,12 +636,5 @@ export async function declineInvite(societyId: string) {
   return { success: true, message: 'Invite declined' };
 }
 
-export async function getFinancialPassport() {
-  /* ORIGINAL BACKEND CALL:
-  const res = await apiFetch('/user/financial-passport', { method: 'GET' }, true);
-  if (!res.ok) throw new Error('Failed to fetch financial passport');
-  return res.json();
-  */
-
-  return MOCK_FINANCIAL_PASSPORT;
-}
+// NOTE: the real getFinancialPassport lives in app/actions/passport.ts — both
+// dashboard pages import from there, so this file no longer duplicates it.
