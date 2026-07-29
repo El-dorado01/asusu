@@ -6,37 +6,40 @@ const BACKEND_URL =
 export async function apiFetch(
   endpoint: string,
   options: RequestInit = {},
-  server: boolean = false
+  useServerCookies: boolean = false
 ) {
   let token: string | undefined;
 
-  if (server) {
+  if (useServerCookies) {
     // In server components or actions — cookies() is async
-    const { cookies } = await import("next/headers");
+    const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
-    token = cookieStore.get("auth_token")?.value;
+    token = cookieStore.get('auth_token')?.value;
   } else {
     // In client components — read from document.cookie (not httpOnly!)
     // Note: httpOnly cookies are NOT accessible here
     // So we'll need a different strategy for client-side auth (see note below)
     token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("auth_token="))
-      ?.split("=")[1];
+      .split('; ')
+      .find((row) => row.startsWith('auth_token='))
+      ?.split('=')[1];
   }
 
   const headers = new Headers(options.headers);
 
-  headers.set("Content-Type", "application/json");
-  headers.set("Accept", "application/json");
+  // Only set Content-Type to JSON if body is NOT FormData
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  headers.set('Accept', 'application/json');
 
   if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   return fetch(`${BACKEND_URL}${endpoint}`, {
     ...options,
     headers,
-    credentials: "include", // important if you ever use non-httpOnly session cookies
+    credentials: 'include', // important if you ever use non-httpOnly session cookies
   });
 }

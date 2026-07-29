@@ -9,11 +9,11 @@ import {
 } from "react";
 
 type User = {
-  id: number;
+  id: number | string;
   name: string;
   email: string;
   phone?: string;
-  // add other fields from your Laravel User model
+  avatar_url?: string | null;
 };
 
 type AuthContextType = {
@@ -33,20 +33,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
 
       // First, try to get user from cookie (fastest)
-      const userCookie = document.cookie
+      const cookieRow = document.cookie
         .split("; ")
         .find((row) => row.startsWith("auth_user="));
 
-      if (userCookie) {
-        const userData = JSON.parse(
-          decodeURIComponent(userCookie.split("=")[1])
-        );
+      if (cookieRow) {
+        const rawValue = cookieRow.substring("auth_user=".length);
+        const userData = JSON.parse(decodeURIComponent(rawValue));
         setUser(userData);
         setIsLoading(false);
         return;
       }
 
-      // Fallback: fetch from a server action if cookie missing (e.g. after refresh)
+      // Fallback: fetch from server endpoint if cookie missing
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.ok) {
         const userData = await res.json();
