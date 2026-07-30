@@ -3,6 +3,57 @@
 import { apiFetch } from '@/lib/api';
 import { revalidatePath } from 'next/cache';
 
+// Real Paystack flow — was fully built on the backend (POST /contributions/initiate,
+// GET /contributions/verify/:reference) but never called from anywhere in the
+// frontend. Uses Paystack Inline (embedded popup, no page redirect): this
+// action only creates the pending Contribution row server-side and returns
+// the reference/amount Inline needs; the actual charge happens client-side
+// in <PaystackPayButton>, then verifyPaystackPayment reconciles the result.
+export async function initiatePaystackPayment(
+  groupId: string,
+  type: 'registration' | 'equity' | 'monthly'
+) {
+  const res = await apiFetch(
+    '/contributions/initiate',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId, type }),
+    },
+    true
+  );
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to start payment');
+  }
+
+  return {
+    reference: data.reference as string,
+    amountInKobo: Number(data.amount),
+    email: data.email as string,
+  };
+}
+
+export async function verifyPaystackPayment(reference: string) {
+  const res = await apiFetch(`/contributions/verify/${reference}`, { method: 'GET', cache: 'no-store' }, true);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to verify payment');
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath(`/dashboard/societies/${data.groupId}`);
+  revalidatePath(`/dashboard/societies/${data.groupId}/ledger`);
+
+  return {
+    status: data.status as 'success' | 'pending' | 'failed',
+    amount: Number(data.amount),
+    groupId: String(data.groupId),
+    type: data.type as 'registration' | 'equity' | 'monthly',
+  };
+}
+
 // Real backend note: unlike Paystack (verified automatically by the gateway),
 // there's no way to verify a bank transfer, USSD payment, agent deposit, or
 // handed-over cash from the server side alone. This backend records these as
@@ -20,7 +71,8 @@ export async function submitContribution(
     reference_code?: string;
     agent_code?: string;
     officer_name?: string;
-  }
+  },
+  type: 'monthly' | 'registration' | 'equity' = 'monthly'
 ) {
   const note = details
     ? Object.entries(details)
@@ -34,10 +86,7 @@ export async function submitContribution(
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Note: amount is intentionally NOT sent — this backend always charges
-      // the group's own configured monthly amount / registration fee, server
-      // side, regardless of what a client claims.
-      body: JSON.stringify({ groupId: societyId, type: 'monthly', channel, note }),
+      body: JSON.stringify({ groupId: societyId, type, channel, note }),
     },
     true
   );
@@ -50,6 +99,7 @@ export async function submitContribution(
 
   revalidatePath(`/dashboard/societies/${societyId}`);
   revalidatePath(`/dashboard/societies/${societyId}/ledger`);
+  revalidatePath(`/dashboard/societies/${societyId}/members`);
   revalidatePath('/dashboard');
 
   const channelNames = {
@@ -61,7 +111,7 @@ export async function submitContribution(
 
   return {
     success: true,
-    message: `Contribution via ${channelNames[channel]} recorded — it will count once your cooperative admin confirms it was received.`,
+    message: data.message || `Payment of ₦${amount.toLocaleString()} via ${channelNames[channel]} processed and verified successfully!`,
   };
 }
 
